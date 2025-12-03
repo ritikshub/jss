@@ -1,11 +1,19 @@
 const { Queue } = require("bullmq");
 const connection = require("../config/redisdb");
-
+const Postjob = require("../models/Execution");
 // created the queue
 const jobQueue = new Queue("jobQueue", {connection});
 
 // now adding the jobs to the queue, jobDetails will get the savedJob
 async function enqueueJob(jobdet) {
+
+    //creating a post job record tied to this job
+    const postjob = await Postjob.create({
+        jobRef: jobdet._id,
+        startedAt: new Date(),
+        status: "active"
+    });
+    
     await jobQueue.add("execute-job", {
         id: jobdet._id,
         name: jobdet.name,

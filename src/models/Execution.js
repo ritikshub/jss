@@ -19,7 +19,7 @@ const postjob = new mongoose.Schema({
     status: {
         type: String,
         enum: {
-            values: ["success", "failed", "timeout"],
+            values: ["active","success", "failed", "timeout"],
             message: "Job is either success, failed or timeout"
         }
     },

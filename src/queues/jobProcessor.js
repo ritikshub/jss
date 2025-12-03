@@ -8,6 +8,7 @@ const dbConnect = require("../config/db");
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const jobProcessor = new Worker("jobQueue", async job => {
+    // here will be main process work
     console.log("Processing Job:", job.data);
     const start = Date.now();
 
@@ -16,7 +17,10 @@ const jobProcessor = new Worker("jobQueue", async job => {
         const duration = Date.now() - start;
 
     // update the postjob data
-    await Postjob.findByIdAndUpdate(job.data.postjobId, {
+    await Postjob.findOneAndUpdate({
+        jobRef: job.data.id
+    },
+    {
         endedAt: new Date(),
         status: "success",
         durationMs: duration,
@@ -27,7 +31,7 @@ const jobProcessor = new Worker("jobQueue", async job => {
     } catch (error) {
         console.error(`Job ${job.id} failed:`, error);
 
-        await Postjob.findByIdAndUpdate(job.data.postjobId, {
+        await Postjob.findOneAndUpdate(job.data.postjobId, {
         endedAt: new Date(),
         status: "failed",
         resultData: { error: error.message }
@@ -39,6 +43,7 @@ const jobProcessor = new Worker("jobQueue", async job => {
 
 // optional event listeners
 jobProcessor.on("completed", job => {
+
     console.log(`BullMQ marked job ${job.id} completed`);
 });
 

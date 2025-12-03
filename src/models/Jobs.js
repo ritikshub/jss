@@ -64,7 +64,7 @@ const jobschema = new mongoose.Schema({
         },
         backoffStratefy: {
             type: String,
-            enum: ["linear", "exponential", "constaant"],
+            enum: ["exponential", "constant"],
             default: "exponential"
         },
         backoffDelay: {
