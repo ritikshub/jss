@@ -1,50 +1,106 @@
+const { CronExpression } = require("cron-parser");
+const { Schema } = require("mongoose");
 const mongoose = require("mongoose");
-const jobSchema =  new mongoose. Schema({
+const validator = require("validator");
+const { parseExpression } = require("cron-parser");
+const jobschema = new mongoose.Schema({
     name: {
         type: String,
-        minlength: 3,
-        required: [true, "You need a name to identify the job"],
-
+        required: [true, "Job name is required"],
+        minlength: [3, "Name must be at least 3 characters"],
+        trim: true,
     },
     description: {
         type: String,
+        trim: true,
+        maxlength: [500, "Description too long"],
 
     },
-    startedAt: {
-        type: Date,
-        required: true,
-        index: true,
+    jobType: {
+        type: String,
+        required: [true, "Job type is required"],
+        enum: ["webhook"],
+
     },
-    endedAt: {
-        type: Date,
+    schedulingConfig: {
+        scheduleType: {
+            type: String,
+            required: [true, "Schedule type  is required"],
+            enum: ["onetime", "recurring"],
+        },
+        cronExpression: {
+            type: String,
+            required: function(){
+                return this.schedulingConfig && this.schedulingConfig.type === "recurring";
+            },
+            validate: {
+                validator: function(v) {
+                    if (this.schedulingConfig.type !== "recurring") return true;
+                    try {
+                        parseExpression(v);
+                        return true;
+                    } catch {
+                        return false;
+                    }
+                }
+
+            },
+            message: props => `${props.value} is not a valid cron expression`
+        },
+        executionDate: {
+            type: Date,
+            required: function() {
+                return this.schedulingConfig && this.schedulingConfig.type === "onetime";
+
+            }
+        }
+    },
+    retryPolicy: {
+        maxAttempts: {
+            type: Number,
+            min: 0,
+            max: 5,
+            default: 1
+        },
+        backoffStratefy: {
+            type: String,
+            enum: ["linear", "exponential", "constaant"],
+            default: "exponential"
+        },
+        backoffDelay: {
+            type: Number,
+            min: 100,
+            default: 1000
+
+        }
+
+    },
+    webhookUrl: {
+        type: String,
+        required: function() {
+            return this.jobType === "webhook";
+        },
+        validate: {
+            validator: function(v) {
+                return validator.isURL(v || "");
+
+            },
+            message: props => `${props.value} is not a valid URL`
+        }
     },
     status: {
         type: String,
-        required: true,
-        index: true,
-        enum: {
-            values: ["success", "failed", "timeout"],
-            message: "based on the job details it will fetch the values"
-        }
+        enum: ["active", "paused", "deleted"],
+        default: "active",
+        index: true
     },
-    resultData: {
-        tupe: mongoose.Schema.Types.Mixed,
-    },
-    retryAttempts: {
-        type: Number,
-        default: 0,
-        min: 0,
+    lastRunAt: Date,
+    nextRunAt: Date
 
-    },
-    durationMs: {
-        type: Number,
-        
-    },
-    timestamps: true,
+},
 
-
+{
+    timestamps: true
 });
 
-module.exports = mongoose.model("Job", jobSchema);
-
-
+module.exports = mongoose.model("Job", jobschema);
