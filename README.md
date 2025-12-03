@@ -1,7 +1,14 @@
--> Docker Compose lets you run Redis for BullMQ easily by defining a service that uses the official redis:7 image
--> gives the container a fixed name
--> enables AOF persistence for safer queue operations
--> exposes port 6379 so your Node.js app can connect
--> mounts a persistent volume to store Redis data even after restarts. 
--> The restart: unless-stopped policy ensures Redis auto-restores on crashes or system reboot.
--> You run everything using docker compose up -d, stop it with docker compose down, and remove both containers and stored data using docker compose down -v.
+# Job Queue System
+
+A Node.js backend service for managing jobs with **MongoDB (Mongoose)** and **BullMQ**.  
+Jobs are defined and validated via Mongoose schemas, stored in MongoDB, and then enqueued into a Redis-backed BullMQ queue for execution.  
+Execution logs are tracked in a separate `Postjob` schema for auditing.
+
+---
+
+## 🚀 Features
+- **Job definition** (`Job` schema) with scheduling config (`recurring` via cron or `onetime` via date).
+- **Execution logging** (`Postjob` schema) with start/end times, status, retries, and duration.
+- **Queue integration** using BullMQ with Redis.
+- **Worker** that consumes jobs, prints details, simulates work (sleep 5s), and updates execution logs.
+- **Retry policy** with configurable attempts and backoff strategies.
