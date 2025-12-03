@@ -1,5 +1,4 @@
-import { Queue } from "bullmq";
-import IORedis from "ioredis";
+const { Queue } = require("bullmq");
 const connection = require("../config/redisdb");
 
 // created the queue

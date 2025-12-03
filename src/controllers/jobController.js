@@ -1,6 +1,6 @@
 const Postjob = require("../models/Execution");
 const Jobs = require("../models/Jobs")
-const enqueueJob = require("../queues/jobQueue")
+const { enqueueJob } = require("../queues/jobQueue");
 const { default: mongoose } = require("mongoose");
 
 // creating the job to process
