@@ -1,4 +1,4 @@
-const { Queue } = require("bullmq");
+import { Queue } from "bullmq";
 const connection = require("../config/redisdb");
 
 const jobQueue = new Queue("jobQueue", connection);
