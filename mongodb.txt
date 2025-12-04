@@ -1,0 +1,53 @@
+Mongoose offers multiple methods for Create, Read, Update, and Delete operations on models. All examples assume const User = mongoose.model('User', schema); and use async/await.​
+------------------------------------------------------------------------------------------------------------------------------------------
+Operation -->Method--->Description---->Example Code
+Create	Model.create(doc)	Creates one or more validated documents ​	await User.create({ name: 'John' });
+Create	new Model(doc).save()	Instance method with full middleware ​	const u = new User({ name: 'Jane' }); await u.save();
+Create	Model.insertMany(docs)	Bulk insert array, minimal validation ​	await User.insertMany([{ name: 'Bulk1' }]);
+Read	Model.find(filter)	Finds all matching documents ​	await User.find({ status: 'active' });
+Read	Model.findOne(filter)	Finds first matching document ​	await User.findOne({ email: 'test@example.com' });
+Read	Model.findById(id)	Finds by _id ​	await User.findById('userId');
+Update	Model.updateOne(filter, update)	Updates first match, returns counts ​	await User.updateOne({ email: 'old@test.com' }, { $set: { email: 'new@test.com' } });
+Update	Model.updateMany(filter, update)	Updates all matches ​	await User.updateMany({ status: 'inactive' }, { $set: { status: 'active' } });
+Update	Model.findByIdAndUpdate(id, update)	Updates by ID, returns doc ​	await User.findByIdAndUpdate('id', { name: 'Updated' }, { new: true });
+Update	Model.findOneAndUpdate(filter, update)	Updates first match, returns doc ​	await User.findOneAndUpdate({ role: 'admin' }, { $inc: { count: 1 } });
+Update	doc.save()	Saves changes to existing instance ​	const u = await User.findById('id'); u.name = 'Patched'; await u.save();
+Delete	Model.deleteOne(filter)	Deletes first match, returns counts ​	await User.deleteOne({ email: 'spam@test.com' });
+Delete	Model.deleteMany(filter)	Deletes all matches ​	await User.deleteMany({ status: 'deleted' });
+Delete	Model.findByIdAndDelete(id)	Deletes by ID, returns doc ​	await User.findByIdAndDelete('userId');
+Delete	Model.findOneAndDelete(filter)	Deletes first match, returns doc ​	await User.findOneAndDelete({ inactive: true });
+Delete	doc.deleteOne()	Deletes current instance ​	const u = await User.findById('id'); await u.deleteOne();
+------------------------------------------CREATE METHODS -----------------------------------------------------------------------------------------------
+--> Model.create(docs): Creates one or multiple documents and saves them to the database. Returns the created document(s). Runs validation and middleware.
+--> new Model(doc).save(): Instantiates a new document and saves it. Returns the saved document. Triggers schema middleware.
+--> Model.insertMany(docs, options): Inserts multiple documents efficiently in bulk. Returns inserted documents. Faster for large batches, minimal validation by default.
+
+------------------------------------------CRUD METHODS-----------------------------------------------------------------------------------
+--> Model.deleteMany(filter): Deletes all documents matching the filter. Returns a result object with deletion count. Does not return the deleted documents.
+
+--> Model.deleteOne(filter): Deletes the first document matching the filter. Returns a result with deletion count. Useful for removing a single doc by condition.
+
+--> Model.find(filter): Finds all documents matching the filter. Returns an array of documents. Supports query chaining and projections.
+
+--> Model.findById(id): Finds a single document by its _id field. Returns null if not found. Shortcut for findOne({ _id: id }).
+
+--> Model.findByIdAndDelete(id): Finds a document by _id and deletes it. Returns the deleted document. Atomic operation.
+
+--> Model.findByIdAndRemove(id): Alias for findByIdAndDelete(). Deletes by _id and returns deleted doc. Functionally identical.
+
+--> Model.findByIdAndUpdate(id, update, options): Finds by _id and updates the document. Returns the updated or original doc based on options. Supports atomic updates.
+
+--> Model.findOne(filter): Finds the first document matching filter. Returns a single document or null. Useful for searching by any criteria.
+
+--> Model.findOneAndDelete(filter): Finds and deletes the first document matching filter. Returns the deleted document. Atomic find-and-remove.
+
+--> Model.findOneAndReplace(filter, replacement, options): Finds one document and replaces it with another. Returns the replaced document. Supports upsert and return options.
+
+--> Model.findOneAndUpdate(filter, update, options): Finds one document matching filter and updates it. Returns the updated or original doc depending on options. Atomic find-and-modify.
+
+--> Model.replaceOne(filter, replacement, options): Replaces the first document matching filter with replacement doc. Returns write result with count info. Does not return replaced doc.
+
+--> Model.updateMany(filter, update, options): Updates all documents matching filter with given update. Returns write operation result with counts. Supports upsert.
+
+--> Model.updateOne(filter, update, options): Updates the first document matching filter. Returns write operation counts. Does not return document(s).
+--------------------------------------------------------------------------------------------------------------------------------------------------------------

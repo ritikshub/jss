@@ -1,19 +1,19 @@
 const { CronExpression } = require("cron-parser");
-const { Schema } = require("mongoose");
 const mongoose = require("mongoose");
 const validator = require("validator");
 const { parseExpression } = require("cron-parser");
+
 const jobschema = new mongoose.Schema({
     name: {
         type: String,
         required: [true, "Job name is required"],
-        minlength: [3, "Name must be at least 3 characters"],
+        minLength: [3, "Name must be at least 3 characters"],
         trim: true,
     },
     description: {
         type: String,
         trim: true,
-        maxlength: [500, "Description too long"],
+        maxLength: [500, "Description too long"],
 
     },
     jobType: {

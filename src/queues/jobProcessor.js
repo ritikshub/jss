@@ -2,6 +2,7 @@ const { Worker } = require("bullmq");
 const connection = require("../config/redisdb");
 const Postjob = require("../models/Execution");
 const dbConnect = require("../config/db");
+const axios = require("axios"); // for sending the payload to the webhook once the work is done
 
 
 
@@ -17,17 +18,25 @@ const jobProcessor = new Worker("jobQueue", async job => {
         const duration = Date.now() - start;
 
     // update the postjob data
-    await Postjob.findOneAndUpdate({
+    await Postjob.findOneAndUpdate(
+    {
         jobRef: job.data.id
     },
     {
         endedAt: new Date(),
         status: "success",
         durationMs: duration,
-        resultData: { message: "Webhook work is done and dusted" }
-    });
+        resultData: { message: "Work is done and dusted" }
+    },
+    { new: true}
+    );
 
     console.log(`Job ${job.id} done, updated Postjob ${job.data.postjobId}`);
+
+    // after the successful completion of job, here we can put the webhook payload to be send
+
+
+
     } catch (error) {
         console.error(`Job ${job.id} failed:`, error);
 
@@ -37,7 +46,10 @@ const jobProcessor = new Worker("jobQueue", async job => {
         resultData: { error: error.message }
     });
 
-    throw error; // rethrow so BullMQ marks job failed
+    // here we can put the code for the webhook payload that has to be send after the failure
+
+
+    throw error; 
     }
 }, { connection });
 

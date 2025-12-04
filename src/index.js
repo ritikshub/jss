@@ -6,10 +6,11 @@ const routes = require("../src/routes/routes");
 const { BullMQAdapter } = require("@bull-board/api/bullMQAdapter");
 const { createBullBoard } = require("@bull-board/api");
 const { ExpressAdapter } = require("@bull-board/express");
+
+//importing the jobQueue that will queue the job to process
 const { jobQueue } = require("../src/queues/jobQueue");
 
 // importing the worker
-
 require("../src/queues/jobProcessor");
 
 const app = express();
@@ -40,6 +41,6 @@ app.use("/", routes);
 
 // start server
 app.listen(3000, () => {
-    console.log("okay, server is running!!");
+    console.log("Server is running at http://localhost:3000/");
     console.log("Bull-board at http://localhost:3000/admin/queues");
 });
