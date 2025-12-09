@@ -1,6 +1,7 @@
 const { Queue } = require("bullmq");
 const connection = require("../config/redisdb");
 const Postjob = require("../models/Execution");
+
 // created the queue
 const jobQueue = new Queue("jobQueue", {connection});
 
@@ -14,6 +15,7 @@ async function enqueueJob(jobdet) {
         status: "active"
     });
     
+    // adding the job to the queue.
     await jobQueue.add("execute-job", {
         id: jobdet._id,
         name: jobdet.name,
@@ -30,7 +32,10 @@ async function enqueueJob(jobdet) {
         backoff: {
             type: jobdet.retryPolicy?.backoffStratefy || "exponential",
             delay: jobdet.retryPolicy?.backoffDelay || 1000
-    },
+        },
+        repeat: jobdet.schedulingConfig?.cronExpression
+        ? { cron: jobdet.schedulingConfig.cronExpression }
+        : undefined
     });
     console.log(`Job Id: ${jobdet._id} enqueued!!`);
 }
