@@ -6,12 +6,14 @@ const jobController = require("../controllers/jobController");
 
 // getting the job details by id
 router.get("/api/jobs/:id",jobController.getJob);
-// getting all the jobs
 
+// getting all the jobs
 router.get("/api/jobs", jobController.getJob);
 
 // adding job to the database
-
 router.post("/api/job", jobController.createJob);
+
+// deleting a job from the database:
+router.delete("/api/job/:id", jobController.deleteJob);
 
 module.exports = router;

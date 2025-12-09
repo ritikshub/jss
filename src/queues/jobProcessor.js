@@ -4,61 +4,86 @@ const Postjob = require("../models/Execution");
 const dbConnect = require("../config/db");
 const axios = require("axios"); // for sending the payload to the webhook once the work is done
 
+// --- webhook default timeout-------------
+const WEBHOOK_TIMEOUT_MS = 30000; // this is 30 second of timeout
 
+// function to save the updated job data to the database 
+async function logJobResult(jobId, status, durationMs, resultDetails) {
+    const update = {
+        endedAt: new Date(),
+        status: status,
+        durationMs: durationMs,
+        resultData: resultDetails,
+    };
 
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+    const updatedPostJob = await Postjob.findOneAndUpdate(
+        { jobRef: jobId }, update, { new: true } 
+    );
+}
 
-const jobProcessor = new Worker("jobQueue", async job => {
-    // here will be main process work
-    console.log("Processing Job:", job.data);
+//  ---- the main webhhok processor logic------
+async function executeWebhookJob(job) {
+    const { id, webhookUrl, name, executionData } = job.data;
+
+    const fullPayload = {
+        job_id: id,
+        attempt: job.attemptsMade + 1,
+        action_type: name,
+        worker_timestamp: new Date().toISOString(),
+
+    };
+
     const start = Date.now();
 
     try {
-        await sleep(5000);
+        const response = await axios.post(webhookUrl, fullPayload, {
+            timeout: WEBHOOK_TIMEOUT_MS,
+            headers: { "Content-Type": "application/json" }
+        });
         const duration = Date.now() - start;
 
-    // update the postjob data
-    await Postjob.findOneAndUpdate(
-    {
-        jobRef: job.data.id
-    },
-    {
-        endedAt: new Date(),
-        status: "success",
-        durationMs: duration,
-        resultData: { message: "Work is done and dusted" }
-    },
-    { new: true}
-    );
+        if(response.status >= 200 && response.status <300) {
+            await logJobResult(id, "success", duration, {
+                status: response.status,
+                data: response.data
+            });
+        
 
-    console.log(`Job ${job.id} done, updated Postjob ${job.data.postjobId}`);
+        console.log(`Job ${id}: Webhook successful (Status: ${response.status})`);
 
-    // after the successful completion of job, here we can put the webhook payload to be send
-
-
+        return { status: "DELIVERED", httpStatus: response.status };
+        } else {
+            throw new Error(`Webhook failed with non-2xx status code: ${response.status}`);
+        }
 
     } catch (error) {
-        console.error(`Job ${job.id} failed:`, error);
+        const duration = Date.now() - start;
+        let errorMessage = error.message;
 
-        await Postjob.findOneAndUpdate(job.data.postjobId, {
-        endedAt: new Date(),
-        status: "failed",
-        resultData: { error: error.message }
-    });
-
-    // here we can put the code for the webhook payload that has to be send after the failure
-
-
-    throw error; 
+        //log the failure to the database:
+        await logJobResult(id, "failed", duration, {
+            error: errorMessage,
+            status: error.response.status
+        });
+        throw new Error(errorMessage);
     }
-}, { connection });
+}
+const jobProcessor = new Worker("jobQueue", executeWebhookJob, {
+    connection,
+    limiter: {
+        max: 10,
+        duration: 30000
+    },
+    concurrency: 5
+});
 
-// optional event listeners
+
+// event listner in case of job completed
 jobProcessor.on("completed", job => {
-
     console.log(`BullMQ marked job ${job.id} completed`);
 });
 
+// event listener in case of job failed
 jobProcessor.on("failed", (job, err) => {
     console.error(`BullMQ marked job ${job?.id} failed:`, err);
 });

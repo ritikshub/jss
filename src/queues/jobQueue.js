@@ -23,7 +23,8 @@ async function enqueueJob(jobdet) {
         retryPolicy: jobdet.retryPolicy,
         webhookUrl: jobdet.webhookUrl,
         status: jobdet.status,
-    }, {
+    }, 
+    {
 
         attempts: jobdet.retryPolicy?.maxAttempts || 1,
         backoff: {
