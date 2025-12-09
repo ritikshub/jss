@@ -1,6 +1,6 @@
 const Postjob = require("../models/Execution");
 const Jobs = require("../models/Jobs")
-const { enqueueJob } = require("../queues/jobQueue");
+const { enqueueJob, jobQueue } = require("../queues/jobQueue");
 const { default: mongoose } = require("mongoose");
 
 // creating the job to process
@@ -73,9 +73,42 @@ const deleteJob = async(req, res) => {
     }
 };
 
+// getting execution history of all the job in the queue.
+
+const jobHistory = async (req, res) => {
+    try {
+        const jobs = await jobQueue.getJobs(
+            ["completed", "active", "waiting", "failed", "delayed"],
+            0, 50 // pagination thing
+        );
+        const history = await Promise.all(
+            jobs.map(async j => ({
+                id: j.id,
+                name: j.name,
+                state: await j.getState(),
+                attemptsMade: j.attemptsMade,
+                processedOn: j.processedOn,
+                finishedOn: j.finishedOn
+
+            }))
+        );
+        res.json({
+            success: true, history
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        })
+
+    };
+};
+
 
 module.exports = {
     createJob,
     getJob,
     deleteJob,
+    jobHistory
 };
