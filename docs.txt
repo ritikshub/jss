@@ -51,3 +51,50 @@ Delete	doc.deleteOne()	Deletes current instance ​	const u = await User.findByI
 
 --> Model.updateOne(filter, update, options): Updates the first document matching filter. Returns write operation counts. Does not return document(s).
 --------------------------------------------------------------------------------------------------------------------------------------------------------------
+📌 Queue (Job Queue)
+Common Methods
+- add(name, data, opts?) → Add a job to the queue with a name, payload, and options.
+- addBulk(jobs) → Add multiple jobs at once.
+- pause() / resume() → Temporarily stop or resume processing jobs.
+- getJob(jobId) → Retrieve a specific job by ID.
+- getJobs(types, start, end, asc) → Get jobs by status (waiting, active, completed, failed, etc.).
+- getJobCounts() → Get counts of jobs by status.
+- remove(jobId) → Remove a job from the queue.
+- obliterate(opts?) → Delete all jobs in the queue.
+- close() → Gracefully close the queue connection.
+
+Queue Options
+- connection → Redis connection details.
+- limiter → Rate limiting (e.g., { max: 10, duration: 1000 }).
+- defaultJobOptions → Default options for jobs (e.g., removeOnComplete, attempts, backoff).
+- prefix → Redis key prefix (default "bull")
+-----------------------------------------------------------------------------------------------------------------------------------------
+📌 Worker
+Common Methods
+- Constructor: new Worker(queueName, processorFn, opts)
+- close() → Gracefully close the worker.
+- Event listeners:
+- worker.on("completed", (job, result) => {})
+- worker.on("failed", (job, err) => {})
+- worker.on("progress", (job, progress) => {})
+- worker.on("stalled", (job) => {})
+
+Worker Options
+- concurrency → Max concurrent jobs (default: 1).
+- limiter → Rate limiting per worker.
+- removeOnComplete → Auto-remove completed jobs (by count or age).
+- removeOnFail → Auto-remove failed jobs (by count or age).
+- lockDuration → Job lock TTL in ms (default: 30000).
+- stalledInterval → Interval to check for stalled jobs (default: 30000).
+- maxStalledCount → Max stalls before marking job failed.
+- autorun → Whether the worker starts processing immediately (default: true).
+- prefix → Redis key prefix.
+------------------------------------------------------------------------------------------------------------------------------------------
+⚠️ Important Points: 
+- Rate Limiting: Both Queue and Worker support limiter options, but they apply differently 
+- (Queue throttles job addition, Worker throttles job execution).
+- Cleanup: Use removeOnComplete and removeOnFail to avoid unbounded Redis growth.
+- Concurrency: Worker concurrency is critical for throughput — set it based on your workload.
+
+
+
