@@ -37,7 +37,7 @@ async function executeWebhookJob(job) {
 
     try {
         const response = await axios.post(webhookUrl, fullPayload, {
-            timeout: WEBHOOK_TIMEOUT_MS,
+            //timeout: WEBHOOK_TIMEOUT_MS,
             headers: { "Content-Type": "application/json" }
         });
         const duration = Date.now() - start;

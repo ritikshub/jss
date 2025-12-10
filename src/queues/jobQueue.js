@@ -37,7 +37,7 @@ async function enqueueJob(jobdet) {
         ? { cron: jobdet.schedulingConfig.cronExpression }
         : undefined
     });
-    console.log(`Job Id: ${jobdet._id} enqueued!!`);
+    console.log(`Job Id: ${jobdet._id}: Added to the queue to be processed!!`);
 }
 
 

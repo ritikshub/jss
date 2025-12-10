@@ -104,11 +104,46 @@ const jobHistory = async (req, res) => {
 
     };
 };
+const patchJob = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updates = req.body;
+        // updating the existing job 
+        const existingJob = await Jobs.findById(id);
+        console.log(existingJob);
+        if (!existingJob) {
+            return res.status(404).json({ success: false, message: "Job not found"});
+        }
+        if (existingJob.schedulingConfig?.cronExpression) {
+            await jobQueue.removeRepeatable(existingJob.name, {
+                cron: existingJob.schedulingConfig.cronExpression
+            });
+        }
+
+        const updateJob = await Jobs.findByIdAndUpdate(id, { $set: updates }, {
+            new: true,
+            runValidators: true
+        });
+        // Re enque with the new data
+        await enqueueJob(updateJob);
+        res.status(200).json({
+            success: true,
+            data: updateJob
+        });
+
+    }catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        })
+    }
+}
 
 
 module.exports = {
     createJob,
     getJob,
     deleteJob,
-    jobHistory
+    jobHistory,
+    patchJob,
 };

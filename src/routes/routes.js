@@ -17,7 +17,11 @@ router.post("/api/job", jobController.createJob);
 // deleting a job from the database:
 router.delete("/api/job/:id", jobController.deleteJob);
 
+//updating the job details
+router.patch("/api/job/:id", jobController.patchJob);
+
 //getting the history of the queue:
 router.get("/api/executions", jobController.jobHistory)
+
 
 module.exports = router;
