@@ -23,5 +23,6 @@ router.patch("/api/job/:id", jobController.patchJob);
 //getting the history of the queue:
 router.get("/api/executions", jobController.jobHistory)
 
-
+// getting the history of a job by id
+router.get("/api/execution/:id", jobController.executionHistory);
 module.exports = router;

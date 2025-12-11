@@ -1,5 +1,6 @@
 const Postjob = require("../models/Execution");
-const Jobs = require("../models/Jobs")
+const Jobs = require("../models/Jobs");
+const { Job } = require("../queues/jobProcessor");
 const { enqueueJob, jobQueue } = require("../queues/jobQueue");
 const { default: mongoose } = require("mongoose");
 
@@ -138,7 +139,31 @@ const patchJob = async (req, res) => {
         })
     }
 }
+const executionHistory = async(req, res) => {
+    try {
+        const { id } = req.params;
+        const getJobId = await jobQueue.findById(id);
+        return res.status(200).json({
+            success: true,
+            getJobId
 
+        })
+        if (!getJobId) {
+            return res.state(404).json({
+                success: true,
+                message: "Job Not Found"
+            });
+        }
+
+    }catch (error) {
+        console.error("Execution History Error", error);
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+
+}
 
 module.exports = {
     createJob,
@@ -146,4 +171,5 @@ module.exports = {
     deleteJob,
     jobHistory,
     patchJob,
+    executionHistory
 };

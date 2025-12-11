@@ -1,8 +1,10 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
-const cronParser = require("cron-parser");
-const interval = cronParser.parseExpression("*/10 * * * * *", { useSeconds: true });
-console.log(interval.next().toString());
+const { CronExpressionParser } = require("cron-parser");
+
+// const cronParser = require("cron-parser");
+// const interval = cronParser.parseExpression("*/10 * * * * *", { useSeconds: true });
+// console.log(interval.next().toString());
 
 
 
@@ -43,15 +45,18 @@ const jobschema = new mongoose.Schema({
             },
             validate: {
                 validator: function(v) {
+                    // Not recurring, can skip validation.
                     if (
                         !this.schedulingConfig || 
                         this.schedulingConfig.scheduleType !== "recurring"
                     ) {
                         return true;
                     }
+
                     if (!v || typeof v !== "string") return false;
+
                     try {
-                        cronParser.parseExpression(v, { useSeconds: true } );
+                        cronParser.parseExpression(v);
                         return true;
                     } catch (e){
                         console.error("Cron Parser Error:", e.message)

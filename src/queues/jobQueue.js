@@ -31,7 +31,7 @@ async function enqueueJob(jobdet) {
         attempts: jobdet.retryPolicy?.maxAttempts || 1,
         backoff: {
             type: jobdet.retryPolicy?.backoffStratefy || "exponential",
-            delay: jobdet.retryPolicy?.backoffDelay || 1000
+            delay: jobdet.retryPolicy?.backoffDelay || 5000
         },
         repeat: jobdet.schedulingConfig?.cronExpression
         ? { cron: jobdet.schedulingConfig.cronExpression }

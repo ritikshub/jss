@@ -4,10 +4,7 @@ const Postjob = require("../models/Execution");
 const dbConnect = require("../config/db");
 const axios = require("axios"); // for sending the payload to the webhook once the work is done
 
-// --- webhook default timeout-------------
-const WEBHOOK_TIMEOUT_MS = 30000; // this is 30 second of timeout
-
-// function to save the updated job data to the database 
+// ---------------function to save the updated job data to the database -------------
 async function logJobResult(jobId, status, durationMs, resultDetails) {
     const update = {
         endedAt: new Date(),
@@ -21,7 +18,7 @@ async function logJobResult(jobId, status, durationMs, resultDetails) {
     );
 }
 
-//  ---- the main webhhok processor logic------
+//  ------ the processor logic here that worker will use----------
 async function executeWebhookJob(job) {
     const { id, webhookUrl, name, executionData } = job.data;
 
@@ -37,12 +34,12 @@ async function executeWebhookJob(job) {
 
     try {
         const response = await axios.post(webhookUrl, fullPayload, {
-            //timeout: WEBHOOK_TIMEOUT_MS,
             headers: { "Content-Type": "application/json" }
         });
         const duration = Date.now() - start;
 
         if(response.status >= 200 && response.status <300) {
+            //logging the result to the mongo
             await logJobResult(id, "success", duration, {
                 status: response.status,
                 data: response.data
@@ -68,22 +65,21 @@ async function executeWebhookJob(job) {
         throw new Error(errorMessage);
     }
 }
+// -------------main worker function--------------------------------------------
 const jobProcessor = new Worker("jobQueue", executeWebhookJob, {
     connection,
-    limiter: {
-        max: 10,
-        duration: 30000
-    },
-    concurrency: 5
+    concurrency: 5,
+    autorun: true,
+    removeOnComplete: true,
 });
 
 
-// event listner in case of job completed
+// -------------event listner in case of job completed---------------------------
 jobProcessor.on("completed", job => {
     console.log(`BullMQ marked job ${job.id} completed`);
 });
 
-// event listener in case of job failed
+// ---------------------event listener in case of job failed-------------------
 jobProcessor.on("failed", (job, err) => {
     console.error(`BullMQ marked job ${job?.id} failed:`, err);
 });
