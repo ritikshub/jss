@@ -95,6 +95,73 @@ Worker Options
 - (Queue throttles job addition, Worker throttles job execution).
 - Cleanup: Use removeOnComplete and removeOnFail to avoid unbounded Redis growth.
 - Concurrency: Worker concurrency is critical for throughput — set it based on your workload.
+-------------------------------------------------------------------------------------------------------------------------------------
+Bull Queue Cheat Sheet:
+# BullMq Cheat Sheet
+await queue.add('jobName', { ...data }, {
 
+  /* ------------------------ Core Options ------------------------ */
 
+  jobId: 'logical-id-123',      // Custom job ID (useful for de-duplication)
+  priority: 1,                  // Lower number = higher priority (1 is highest)
+  delay: 5000,                  // Delay before first execution (in ms)
+  lifo: false,                  // true = add to end (LIFO)
+  attempts: 3,                  // Total attempts: 1 initial + retries
+
+  backoff: {                    // Backoff strategy for retries
+    type: 'fixed' | 'exponential' | 'customName',
+    delay: 2000                 // Backoff duration
+  },
+
+  /* ------------------------ Repeat / Scheduler ------------------------ */
+
+  repeat: {
+    every: 60000,               // Run every X ms
+    cron: '*/10 * * * * *',     // Or provide a cron expression
+    limit: 100,                 // Max total runs
+    jobId: 'scheduler-123',     // Stable job identity for scheduler
+    startDate: new Date(),      // Optional start time
+    endDate: new Date(),        // Optional end time
+    tz: 'Asia/Kolkata'          // Timezone
+  },
+
+  /* ------------------------ Cleanup Behavior ------------------------ */
+
+  removeOnComplete: true | number,  // Auto-remove job when done (or keep last N)
+  removeOnFail: false | number,     // Auto-remove on failure
+
+  /* ------------------------ Misc Options ------------------------ */
+
+  timeout: 30000,               // Max processing time before forced failure
+  attemptsMade: 0,              // Internal use
+});
+
+----------------------------------------------------------------------------------------------------------------------------
+Worker Cheat Sheet:
+const worker = new Worker('q', processor, {
+  connection,                 // Redis connection
+  concurrency: 5,             // parallel jobs
+  autorun: true,              // start immediately
+
+  // Locking / stalled
+  lockDuration: 30000,
+  lockRenewInterval: 15000,
+  skipStalledCheck: false,
+  maxStalledCount: 1,
+  stalledInterval: 30000,
+
+  // Execution mode
+  useWorkerThreads: false,
+  workerType: 'sandbox',      // 'sandbox' | 'direct' | 'process' | 'thread'
+
+  // Cleanup defaults (if not set in job opts)
+  removeOnComplete: true,
+  removeOnFail: false,
+
+  // Custom backoff
+  backoffStrategies: {
+    customStrategy: (attemptsMade, err, job) => attemptsMade * 2000
+  }
+});
+-----------------------------------------------------------------------------------------------------------------------------
 
