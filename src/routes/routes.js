@@ -6,23 +6,35 @@ const { jobScheduler } = require("../queues/jobProcessor");
 
 
 // getting the job details by id
-router.get("/api/jobs/:id",jobController.getJob);
+router.get("/api/jobs/:id",jobController.jobById);
 
 // getting all the jobs
 router.get("/api/jobs", jobController.getJob);
 
 // adding job to the database
-router.post("/api/job", jobController.createJob);
+router.post("/api/jobs", jobController.createJob);
 
 // deleting a job from the database:
-router.delete("/api/job/:id", jobController.deleteJob);
+router.delete("/api/jobs/:id", jobController.deleteJob);
+
+// deleting a repeatable job from the queue.
+router.delete("/api/jobs/:key", jobController.deleteRepeatableJob)
 
 //updating the job details
-router.patch("/api/job/:id", jobController.patchJob);
+router.patch("/api/jobs/:id", jobController.patchJob);
 
-//getting the history of the queue:
-router.get("/api/executions", jobController.jobHistory)
+// pausing the job of the queue
+router.patch("/api/executions/pause", jobController.pauseQueue);
 
-// getting the history of a job by id
-router.get("/api/execution/:id", jobController.executionHistory);
+// resume the job of the queue
+router.patch("/api/executions/resume", jobController.resumeQueue);
+
+//getting the all executions
+router.get("/api/executions", jobController.jobHistory);
+
+//getting the single execution details
+router.get("/api/executions/:id", jobController.executionHistory);
+
+router.get("/api/jobs/:id/executions", jobController.getJobExecutions);
+
 module.exports = router;

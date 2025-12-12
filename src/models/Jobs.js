@@ -1,11 +1,6 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
-const { CronExpressionParser } = require("cron-parser");
-
-// const cronParser = require("cron-parser");
-// const interval = cronParser.parseExpression("*/10 * * * * *", { useSeconds: true });
-// console.log(interval.next().toString());
-
+const parser = require("cron-parser");
 
 
 const jobschema = new mongoose.Schema({
@@ -56,7 +51,7 @@ const jobschema = new mongoose.Schema({
                     if (!v || typeof v !== "string") return false;
 
                     try {
-                        cronParser.parseExpression(v);
+                        parser.parseExpression(v, { useSeconds: false });
                         return true;
                     } catch (e){
                         console.error("Cron Parser Error:", e.message)
@@ -108,6 +103,10 @@ const jobschema = new mongoose.Schema({
             message: props => `${props.value} is not a valid URL`
         }
     },
+    webhookPayload: {
+        type: mongoose.Schema.Types.Mixed,
+        default: {}
+    },
     status: {
         type: String,
         enum: ["active", "paused", "deleted"],
@@ -115,7 +114,7 @@ const jobschema = new mongoose.Schema({
         index: true
     },
     lastRunAt: Date,
-    nextRunAt: Date
+    nextRunAt: Date,
 
 },
 

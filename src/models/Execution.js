@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const Job = require("../models/Jobs")
+const HistorySchema = require("../models/History")
 const postjob = new mongoose.Schema({
     jobRef: {
         type: mongoose.Schema.Types.ObjectId,
@@ -35,7 +36,8 @@ const postjob = new mongoose.Schema({
     durationMs: {
         type: Number,
         min: 0
-    }
+    },
+    history: [HistorySchema]
 },
 {
     timestamps: true

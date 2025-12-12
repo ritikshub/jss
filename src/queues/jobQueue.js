@@ -2,8 +2,10 @@ const { Queue } = require("bullmq");
 const connection = require("../config/redisdb");
 const Postjob = require("../models/Execution");
 
-// created the queue
-const jobQueue = new Queue("jobQueue", {connection});
+// created the queue and deadletter queue in case of failure
+const jobQueue = new Queue("jobQueue", { connection });
+const deadLetterQueue = new Queue("deadLetterQueue", { connection });
+
 
 // now adding the jobs to the queue, jobDetails will get the savedJob
 async function enqueueJob(jobdet) {
@@ -17,13 +19,16 @@ async function enqueueJob(jobdet) {
     
     // adding the job to the queue.
     await jobQueue.add("execute-job", {
-        id: jobdet._id,
+
+        mongoJobId: jobdet._id,
+        postJobId: postjob._id,
         name: jobdet.name,
         description: jobdet.description,
         jobType: jobdet.jobType,
         schedulingConfig: jobdet.schedulingConfig,
         retryPolicy: jobdet.retryPolicy,
         webhookUrl: jobdet.webhookUrl,
+        webhookPayload: jobdet.webhookPayload,
         status: jobdet.status,
     }, 
     {
@@ -42,4 +47,4 @@ async function enqueueJob(jobdet) {
 
 
 
-module.exports = {jobQueue, enqueueJob};
+module.exports = {jobQueue, enqueueJob, deadLetterQueue};

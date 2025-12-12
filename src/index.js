@@ -36,37 +36,10 @@ app.use("/admin/queues", serverAdapter.getRouter());
 // routes
 app.get("/", (req, res) => {
     res.json({
-        message: "Hi, Daman!!",
-        routes: "Below are the routes that works now",
-        links: {
-            to_get_all_job: "https://unvizored-pettishly-wynona.ngrok-free.dev/api/jobs",
-            to_get_a_job: "https://unvizored-pettishly-wynona.ngrok-free.dev/api/jobs/:id",
-            to_create_a_job: "https://unvizored-pettishly-wynona.ngrok-free.dev/api/job",
-            to_delete_a_job: "https://unvizored-pettishly-wynona.ngrok-free.dev/api/job/:id",
-            queue_dashboard: "https://unvizored-pettishly-wynona.ngrok-free.dev/admin/queues/queue/jobQueue?status=completed",
-            format: {
-                message: {
-
-                        "name": "Weekend Cleanup Job",
-                        "description": "Performs system cleanup every Sunday at 2 AM.",
-                        "jobType": "webhook",
-                        "schedulingConfig": {
-                            "scheduleType": "recurring",
-                            "cronExpression": "0 2 * * SUN"
-                        },
-                        "retryPolicy": {
-                            "maxAttempts": 4,
-                            "backoffStratefy": "exponential",
-                            "backoffDelay": 4000
-                        },
-                        "webhookUrl": "https://webhook.site/132a9f11-3b17-47a2-90fb-471ba43f0d0c",
-                        "status": "active"
-                        }
-            }
-
-        }
-    });
+        message: "Hi, Guys"
+    })
 });
+
 app.use("/", routes);
 
 // start server

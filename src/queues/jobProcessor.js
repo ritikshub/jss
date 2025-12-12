@@ -5,25 +5,38 @@ const dbConnect = require("../config/db");
 const axios = require("axios"); // for sending the payload to the webhook once the work is done
 
 // ---------------function to save the updated job data to the database -------------
-async function logJobResult(jobId, status, durationMs, resultDetails) {
+async function logJobResult(postJobId, status, durationMs, resultDetails) {
     const update = {
         endedAt: new Date(),
-        status: status,
-        durationMs: durationMs,
-        resultData: resultDetails,
+        status,
+        durationMs,
+        resultData: resultDetails
     };
 
-    const updatedPostJob = await Postjob.findOneAndUpdate(
-        { jobRef: jobId }, update, { new: true } 
+    const historyEntry = {
+        timestamp: new Date(),
+        event: status === "success" ? "Execution completed" : "Execution failed",
+        details: resultDetails
+    };
+
+    const updatedPostJob = await Postjob.findByIdAndUpdate(
+        postJobId,
+        {
+        $set: update,   
+        $push: { history: historyEntry }  
+        },
+        { new: true }
     );
 }
 
+
 //  ------ the processor logic here that worker will use----------
 async function executeWebhookJob(job) {
-    const { id, webhookUrl, name, executionData } = job.data;
+    const { mongoJobId, postJobId, webhookUrl, name, webhookPayload } = job.data;
 
     const fullPayload = {
-        job_id: id,
+        ...webhookPayload,
+        job_id: mongoJobId,
         attempt: job.attemptsMade + 1,
         action_type: name,
         worker_timestamp: new Date().toISOString(),
@@ -40,13 +53,11 @@ async function executeWebhookJob(job) {
 
         if(response.status >= 200 && response.status <300) {
             //logging the result to the mongo
-            await logJobResult(id, "success", duration, {
+            await logJobResult(postJobId, "success", duration, {
                 status: response.status,
                 data: response.data
             });
-        
-
-        console.log(`Job ${id}: Webhook successful (Status: ${response.status})`);
+        console.log(`Job ${mongoJobId}: Webhook successful (Status: ${response.status})`);
 
         return { status: "DELIVERED", httpStatus: response.status };
         } else {
@@ -56,32 +67,48 @@ async function executeWebhookJob(job) {
     } catch (error) {
         const duration = Date.now() - start;
         let errorMessage = error.message;
-
+        const statusCode = error.response ? error.response.status : null; 
+        
         //log the failure to the database:
-        await logJobResult(id, "failed", duration, {
+        await logJobResult(postJobIdid, "failed", duration, {
             error: errorMessage,
-            status: error.response.status
+            status: statusCode
         });
-        throw new Error(errorMessage);
+        console.error(`Job ${mongoJobIdid} failed: ${errorMessage} (Status: ${statusCode})`);
+        
+        //dead letter queue
+        if (job.attemptsMade >= job.opts.attempts) {
+            await deadLetterQueue.add("deadLetterJob", {
+                originalJobId: mongoJobId,
+                postJobId,
+                data: job.data,
+                failedReason: error.message,
+                stacktrace: job.stacktrace
+            });
+            console.log(`Job ${mongoJobId} moved to Dead Letter Queue`);
+        }
+        throw error;  
     }
 }
+
 // -------------main worker function--------------------------------------------
 const jobProcessor = new Worker("jobQueue", executeWebhookJob, {
     connection,
     concurrency: 5,
     autorun: true,
-    removeOnComplete: true,
 });
 
-
-// -------------event listner in case of job completed---------------------------
-jobProcessor.on("completed", job => {
-    console.log(`BullMQ marked job ${job.id} completed`);
+// ---------------------event listener in case of job failed----------------
+jobProcessor.on("completed", async (job, result) => {
+    console.log(`BullMQ marked job ${job.id} completed`, result);
 });
 
-// ---------------------event listener in case of job failed-------------------
-jobProcessor.on("failed", (job, err) => {
-    console.error(`BullMQ marked job ${job?.id} failed:`, err);
+jobProcessor.on("failed", async (job, err) => {
+    console.error(`BullMQ marked job ${job.id} failed: ${err.message}`);
+});
+
+jobProcessor.on("error", (err) => {
+    console.error("Worker error:", err);
 });
 
 module.exports = jobProcessor;
