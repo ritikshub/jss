@@ -4,7 +4,7 @@ const { Job } = require("../queues/jobProcessor");
 const { enqueueJob, jobQueue } = require("../queues/jobQueue");
 const { default: mongoose } = require("mongoose");
 
-// ----------------------- creating the job to process---------------------------------------
+// ----------------------- creating the job to process----------------------------------------
 const createJob = async(req, res) => {
     try {
         const job = new Jobs(req.body);
@@ -51,7 +51,7 @@ const jobHistory = async (req, res) => {
     try {
         const jobs = await jobQueue.getJobs(
             ["completed", "active", "waiting", "failed", "delayed"],
-            0, 50 // pagination thing
+            0, 10 // pagination thing
         );
         const history = await Promise.all(
             jobs.map(async j => ({
@@ -79,7 +79,7 @@ const jobHistory = async (req, res) => {
 // --------------getting a job by id-----------------------------------------
 const jobById = async (req, res) => {
     try {
-        const { id } = req.params; // Mongo Job _id from route param
+        const { id } = req.params; 
         const job = await Jobs.findById(id).lean();
 
         if (!job) {
@@ -108,7 +108,6 @@ const patchJob = async (req, res) => {
         const updates = req.body;
         // updating the existing job 
         const existingJob = await Jobs.findById(id);
-        console.log(existingJob);
         if (!existingJob) {
             return res.status(404).json({ success: false, message: "Job not found"});
         }
@@ -136,44 +135,8 @@ const patchJob = async (req, res) => {
         })
     }
 }
-// -----------------------getting history of one time job-------------------------
-const executionHistory = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const job = await jobQueue.getJob(id);
 
-        if (!job) {
-        return res.status(404).json({
-            success: false,
-            message: "Job Not Found"
-        });
-        }
-        return res.status(200).json({
-        success: true,
-        job: {
-            id: job.id,
-            name: job.name,
-            data: job.data,
-            state: await job.getState(),
-            attemptsMade: job.attemptsMade,
-            returnvalue: job.returnvalue,
-            stacktrace: job.stacktrace,
-            timestamp: job.timestamp,
-            finishedOn: job.finishedOn,
-            processedOn: job.processedOn
-        }
-        });
-
-    } catch (error) {
-        console.error("Execution History Error", error);
-        return res.status(500).json({
-        success: false,
-        message: error.message
-        });
-    }
-};
-
-// ----------Pausing the job queue --------------------------------
+// -----------------------Pausing the job queue --------------------------------
 const pauseQueue = async (req, res) => {
     try {
         await jobQueue.pause();
@@ -189,7 +152,7 @@ const pauseQueue = async (req, res) => {
     }
 };
 
-//------------- Resuming the job queue ------------------------------
+//--------------------------- Resuming the job queue ------------------------------
 const resumeQueue = async (req, res) => {
     try {
         await jobQueue.resume();
@@ -204,39 +167,12 @@ const resumeQueue = async (req, res) => {
         });
     }
 };
-// ------------------deleting a job from the queue---------------------------
-const deleteJob = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        const job = await jobQueue.getJob(id);
-        if (!job) {
-        return res.status(404).json({
-            success: false,
-            message: "Job Not Found"
-        });
-        }
-
-        await job.remove(); // ✅ built-in BullMQ function
-
-        return res.status(200).json({
-        success: true,
-        message: `Job ${id} deleted successfully`
-        });
-    } catch (error) {
-        console.error("Delete Job Error", error);
-        return res.status(500).json({
-        success: false,
-        message: error.message
-        });
-    }
-};
 // -------------------deleting a Repeatable Job from the queue-------------------------
 const deleteRepeatableJob = async (req, res) => {
     try {
-        const { key } = req.params; // e.g. "repeat:hash:timestamp"
+        const { key } = req.params; 
 
-        await jobQueue.removeRepeatableByKey(key); // ✅ built-in BullMQ function
+        await jobQueue.removeRepeatableByKey(key);
 
         return res.status(200).json({
         success: true,
@@ -252,14 +188,14 @@ const deleteRepeatableJob = async (req, res) => {
 };
 
 
-
+// -------------------getting all execution history of a job ----------------------
 const getJobExecutions = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Find all executions tied to this job
+        // Finding all executions tied to this job
         const executions = await Postjob.find({ jobRef: id })
-        .sort({ startedAt: -1 }) // newest first
+        .sort({ startedAt: -1 }) 
         .lean();
 
         if (!executions || executions.length === 0) {
@@ -281,24 +217,68 @@ const getJobExecutions = async (req, res) => {
         });
     }
 };
+const getQueueStats = async (req, res) => {
+    try {
+        const counts = await jobQueue.getJobCounts(
+        "waiting",   
+        "active",    
+        "completed", 
+        "failed",    
+        "delayed",   
+        "paused"     
+        );
 
-module.exports = { getJobExecutions };
+        return res.status(200).json({
+        success: true,
+        stats: counts
+        });
+    } catch (error) {
+        console.error("Queue Stats Error", error);
+        return res.status(500).json({
+        success: false,
+        message: error.message
+        });
+    }
+};
 
+const getJobStatsById = async (req, res) => {
+    try {
+        const { id } = req.params; // <-- BullMQ job ID
 
+        const job = await jobQueue.getJob(id);
+        if (!job) {
+        return res.status(404).json({ success: false, message: "Job not found" });
+        }
 
+        const state = await job.getState();
 
+        return res.json({
+        success: true,
+        jobId: job.id,
+        state,
+        attemptsMade: job.attemptsMade,
+        maxAttempts: job.opts.attempts,
+        processedOn: job.processedOn,
+        finishedOn: job.finishedOn,
+        returnValue: job.returnvalue,
+        failedReason: job.failedReason
+        });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
 
 
 module.exports = {
     createJob,
     getJob,
     jobById,
-    deleteJob,
     deleteRepeatableJob,
     jobHistory,
     patchJob,
-    executionHistory,
     resumeQueue,
     pauseQueue,
-    getJobExecutions
+    getJobExecutions,
+    getQueueStats,
+    getJobStatsById,
 };

@@ -2,12 +2,12 @@ const { Queue } = require("bullmq");
 const connection = require("../config/redisdb");
 const Postjob = require("../models/Execution");
 
-// created the queue and deadletter queue in case of failure
+// ----------created the queue and deadletter queue in case of failure--------------------
 const jobQueue = new Queue("jobQueue", { connection });
 const deadLetterQueue = new Queue("deadLetterQueue", { connection });
 
 
-// now adding the jobs to the queue, jobDetails will get the savedJob
+// -----------------now adding the jobs to the queue, jobDetails will get the savedJob-----------------
 async function enqueueJob(jobdet) {
 
     //creating a post job record tied to this job
@@ -44,7 +44,6 @@ async function enqueueJob(jobdet) {
     });
     console.log(`Job Id: ${jobdet._id}: Added to the queue to be processed!!`);
 }
-
 
 
 module.exports = {jobQueue, enqueueJob, deadLetterQueue};

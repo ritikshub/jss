@@ -30,7 +30,7 @@ async function logJobResult(postJobId, status, durationMs, resultDetails) {
 }
 
 
-//  ------ the processor logic here that worker will use----------
+//  ------ -------------the processor logic here that worker will use----------
 async function executeWebhookJob(job) {
     const { mongoJobId, postJobId, webhookUrl, name, webhookPayload } = job.data;
 
@@ -98,7 +98,7 @@ const jobProcessor = new Worker("jobQueue", executeWebhookJob, {
     autorun: true,
 });
 
-// ---------------------event listener in case of job failed----------------
+// ---------------------event listener ---------------------------
 jobProcessor.on("completed", async (job, result) => {
     console.log(`BullMQ marked job ${job.id} completed`, result);
 });
